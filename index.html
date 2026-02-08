@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baby Room Budget</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the input field when editing */
+        .editable-cell input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #cbd5e0; /* gray-300 */
+            border-radius: 0.375rem; /* rounded-md */
+            outline: none;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+            font-family: "Inter", sans-serif; /* Ensure consistent font */
+        }
+        /* Ensure Inter font is used throughout */
+        body {
+            font-family: "Inter", sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 sm:p-8 flex items-center justify-center min-h-screen">
+    <div class="container mx-auto bg-white shadow-lg rounded-xl p-6 sm:p-8 max-w-5xl w-full">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800 mb-6 text-center">
+            🍼 Baby Room Budget Chart
+        </h1>
+
+        <!-- Monthly Salary Section -->
+        <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <label for="monthlySalary" class="block text-lg font-semibold text-gray-700 mb-2">
+                💰 Budget (Estimated):
+            </label>
+            <div id="monthlySalaryDisplay" class="text-2xl font-bold text-blue-700 cursor-pointer p-2 rounded-md hover:bg-blue-100 transition-colors duration-200"
+                 data-numeric-value="0">
+                $0.00
+            </div>
+            <input type="text" id="monthlySalaryInput" class="hidden w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-2xl font-bold" placeholder="Enter total budget">
+        </div>
+
+        <div class="overflow-x-auto rounded-lg shadow-inner">
+            <table class="min-w-full bg-white border-collapse">
+                <thead class="bg-blue-600 text-white">
+                    <tr>
+                        <th class="py-3 px-4 text-left text-sm sm:text-base font-semibold rounded-tl-lg">Category</th>
+                        <th class="py-3 px-4 text-left text-sm sm:text-base font-semibold">Item Description</th>
+                        <th class="py-3 px-4 text-left text-sm sm:text-base font-semibold">Estimated Cost</th>
+                        <th class="py-3 px-4 text-left text-sm sm:text-base font-semibold">Purchased From</th>
+                        <th class="py-3 px-4 text-left text-sm sm:text-base font-semibold rounded-tr-lg">Actual Cost</th>
+                    </tr>
+                </thead>
+                <tbody id="expenseTableBody" class="text-gray-700">
+                    <!-- Data rows will be populated here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Remaining Balance Section -->
+        <div class="mt-8 p-4 bg-green-50 rounded-lg border border-green-200">
+            <label class="block text-lg font-semibold text-gray-700 mb-2">
+                ✨ Remaining Balance:
+            </label>
+            <div id="remainingBalanceDisplay" class="text-3xl font-bold text-green-700 p-2 rounded-md">
+                $0.00
+            </div>
+        </div>
+
+        <p class="mt-8 text-center text-gray-600 text-sm">
+            Click on any cost cell or the total budget to edit its content. Press Enter or click outside to save changes.
+        </p>
+    </div>
+
+    <script>
+        // Data for the spreadsheet, updated to be more granular
+        const expenseData = [
+            {
+                category: "Furniture",
+                items: [
+                    { description: "Crib and mattress", estimatedCost: 500, purchasedFrom: "", actualCost: 0 },
+                    { description: "Changing table or dresser", estimatedCost: 300, purchasedFrom: "", actualCost: 0 },
+                    { description: "Glider or rocking chair", estimatedCost: 450, purchasedFrom: "", actualCost: 0 }
+                ]
+            },
+            {
+                category: "Bedding",
+                items: [
+                    { description: "Crib sheets", estimatedCost: 40, purchasedFrom: "", actualCost: 0 },
+                    { description: "Mattress protectors", estimatedCost: 30, purchasedFrom: "", actualCost: 0 },
+                    { description: "Blankets", estimatedCost: 30, purchasedFrom: "", actualCost: 0 }
+                ]
+            },
+            {
+                category: "Diapering",
+                items: [
+                    { description: "Diapers (initial supply)", estimatedCost: 100, purchasedFrom: "", actualCost: 0 },
+                    { description: "Wipes", estimatedCost: 25, purchasedFrom: "", actualCost: 0 },
+                    { description: "Diaper pail", estimatedCost: 50, purchasedFrom: "", actualCost: 0 }
+                ]
+            },
+            {
+                category: "Feeding",
+                items: [
+                    { description: "Bottles", estimatedCost: 50, purchasedFrom: "", actualCost: 0 },
+                    { description: "Sterilizer", estimatedCost: 75, purchasedFrom: "", actualCost: 0 },
+                    { description: "Nursing pillow", estimatedCost: 45, purchasedFrom: "", actualCost: 0 }
+                ]
+            },
+            {
+                category: "Clothing",
+                items: [
+                    { description: "Onesies, sleepers, etc.", estimatedCost: 150, purchasedFrom: "", actualCost: 0 }
+                ]
+            },
+            {
+                category: "Gear",
+                items: [
+                    { description: "Car seat", estimatedCost: 350, purchasedFrom: "", actualCost: 0 },
+                    { description: "Stroller", estimatedCost: 400, purchasedFrom: "", actualCost: 0 }
+                ]
+            },
+            {
+                category: "Health & Safety",
+                items: [
+                    { description: "Baby monitor", estimatedCost: 150, purchasedFrom: "", actualCost: 0 },
+                    { description: "First aid kit", estimatedCost: 25, purchasedFrom: "", actualCost: 0 },
+                    { description: "Thermometer", estimatedCost: 15, purchasedFrom: "", actualCost: 0 }
+                ]
+            },
+            {
+                category: "Decor",
+                items: [
+                    { description: "Mobile", estimatedCost: 30, purchasedFrom: "", actualCost: 0 },
+                    { description: "Wall art", estimatedCost: 40, purchasedFrom: "", actualCost: 0 },
+                    { description: "Lamps", estimatedCost: 50, purchasedFrom: "", actualCost: 0 }
+                ]
+            },
+            {
+                category: "Miscellaneous",
+                items: [
+                    { description: "Toys", estimatedCost: 40, purchasedFrom: "", actualCost: 0 },
+                    { description: "Books", estimatedCost: 20, purchasedFrom: "", actualCost: 0 },
+                    { description: "Baby carrier", estimatedCost: 75, purchasedFrom: "", actualCost: 0 }
+                ]
+            }
+        ];
+
+        const expenseTableBody = document.getElementById('expenseTableBody');
+        const monthlySalaryDisplay = document.getElementById('monthlySalaryDisplay');
+        const monthlySalaryInput = document.getElementById('monthlySalaryInput');
+        const remainingBalanceDisplay = document.getElementById('remainingBalanceDisplay');
+
+        // Helper function to parse a currency string into a float
+        function parseCurrencyToFloat(currencyString) {
+            if (!currencyString) return 0;
+            const cleanedString = currencyString.replace(/[^0-9.-]+/g, '');
+            const match = cleanedString.match(/(\d+\.?\d*)/);
+            return match ? parseFloat(match[1]) : 0;
+        }
+
+        // Helper function to format a number into currency string
+        function formatFloatToCurrency(number) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(number);
+        }
+
+        // Function to render the table rows
+        function renderTable() {
+            expenseTableBody.innerHTML = ''; // Clear existing rows
+            let rowIndex = 0;
+            expenseData.forEach((category) => {
+                // Add a bold category header row
+                const categoryRow = document.createElement('tr');
+                categoryRow.className = `bg-blue-100 text-blue-800 font-bold border-b border-blue-200`;
+                const categoryCell = document.createElement('td');
+                categoryCell.colSpan = 5;
+                categoryCell.className = 'py-3 px-4 text-left text-sm sm:text-base rounded-tl-lg rounded-tr-lg';
+                categoryCell.textContent = category.category;
+                categoryRow.appendChild(categoryCell);
+                expenseTableBody.appendChild(categoryRow);
+                
+                category.items.forEach((item) => {
+                    const itemRow = document.createElement('tr');
+                    itemRow.className = `border-b border-gray-200 ${rowIndex % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`;
+                    
+                    // First cell is empty for item row
+                    const emptyCell = document.createElement('td');
+                    emptyCell.className = 'py-3 px-4 text-sm sm:text-base';
+                    itemRow.appendChild(emptyCell);
+                    
+                    const descriptionCell = document.createElement('td');
+                    descriptionCell.className = 'py-3 px-4 text-sm sm:text-base';
+                    descriptionCell.textContent = item.description;
+                    itemRow.appendChild(descriptionCell);
+                    
+                    // Estimated Cost Cell (not editable)
+                    const estimatedCostCell = document.createElement('td');
+                    estimatedCostCell.className = 'py-3 px-4 text-sm sm:text-base';
+                    estimatedCostCell.textContent = formatFloatToCurrency(item.estimatedCost);
+                    itemRow.appendChild(estimatedCostCell);
+
+                    // Purchased From Cell (editable)
+                    const purchasedFromCell = document.createElement('td');
+                    purchasedFromCell.className = 'py-3 px-4 text-sm sm:text-base editable-cell';
+                    purchasedFromCell.textContent = item.purchasedFrom;
+                    purchasedFromCell.setAttribute('data-column', 'purchasedFrom');
+                    purchasedFromCell.setAttribute('data-item-category', category.category);
+                    purchasedFromCell.setAttribute('data-item-description', item.description);
+                    itemRow.appendChild(purchasedFromCell);
+                    
+                    // Actual Cost Cell (editable)
+                    const actualCostCell = document.createElement('td');
+                    actualCostCell.className = 'py-3 px-4 text-sm sm:text-base editable-cell';
+                    actualCostCell.textContent = formatFloatToCurrency(item.actualCost);
+                    actualCostCell.setAttribute('data-numeric-value', item.actualCost);
+                    actualCostCell.setAttribute('data-column', 'actualCost');
+                    actualCostCell.setAttribute('data-item-category', category.category);
+                    actualCostCell.setAttribute('data-item-description', item.description);
+                    itemRow.appendChild(actualCostCell);
+                    
+                    expenseTableBody.appendChild(itemRow);
+                    rowIndex++;
+                });
+            });
+        }
+
+        // Function to calculate and display the remaining balance
+        function calculateBalance() {
+            const monthlySalary = parseFloat(monthlySalaryDisplay.getAttribute('data-numeric-value')) || 0;
+            let totalExpenses = 0;
+
+            // Iterate through all actual cost cells and sum their numeric values
+            document.querySelectorAll('#expenseTableBody td[data-column="actualCost"]').forEach(cell => {
+                totalExpenses += parseFloat(cell.getAttribute('data-numeric-value')) || 0;
+            });
+
+            const remainingBalance = monthlySalary - totalExpenses;
+            remainingBalanceDisplay.textContent = formatFloatToCurrency(remainingBalance);
+
+            // Apply color based on balance
+            if (remainingBalance < 0) {
+                remainingBalanceDisplay.classList.remove('text-green-700');
+                remainingBalanceDisplay.classList.add('text-red-700');
+            } else {
+                remainingBalanceDisplay.classList.remove('text-red-700');
+                remainingBalanceDisplay.classList.add('text-green-700');
+            }
+        }
+
+        // Initialize table rendering and initial balance calculation on page load
+        window.onload = () => {
+            renderTable();
+            calculateBalance(); // Perform initial calculation
+        };
+
+        // Event listener for editing editable cells
+        expenseTableBody.addEventListener('click', (event) => {
+            const cell = event.target.closest('td.editable-cell');
+
+            if (cell) {
+                const column = cell.getAttribute('data-column');
+                const originalValue = column === 'actualCost' ? cell.getAttribute('data-numeric-value') : cell.textContent;
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = originalValue;
+                input.className = 'w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500';
+
+                cell.innerHTML = '';
+                cell.appendChild(input);
+                input.focus();
+
+                const saveChanges = () => {
+                    const newText = input.value.trim();
+                    const categoryName = cell.getAttribute('data-item-category');
+                    const itemName = cell.getAttribute('data-item-description');
+                    const categoryObj = expenseData.find(cat => cat.category === categoryName);
+
+                    if (categoryObj) {
+                        const itemObj = categoryObj.items.find(item => item.description === itemName);
+                        if (itemObj) {
+                            if (column === 'actualCost') {
+                                const newNumericValue = parseCurrencyToFloat(newText);
+                                itemObj.actualCost = newNumericValue;
+                                cell.textContent = formatFloatToCurrency(newNumericValue);
+                                cell.setAttribute('data-numeric-value', newNumericValue);
+                                calculateBalance();
+                            } else if (column === 'purchasedFrom') {
+                                itemObj.purchasedFrom = newText;
+                                cell.textContent = newText;
+                            }
+                        }
+                    } else {
+                        cell.textContent = originalValue; // Revert if data object not found
+                    }
+                };
+
+                input.addEventListener('blur', saveChanges);
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        input.blur();
+                    }
+                });
+            }
+        });
+
+        // Monthly Salary Edit functionality
+        monthlySalaryDisplay.addEventListener('click', () => {
+            monthlySalaryDisplay.classList.add('hidden');
+            monthlySalaryInput.classList.remove('hidden');
+            monthlySalaryInput.value = parseFloat(monthlySalaryDisplay.getAttribute('data-numeric-value')) || 0;
+            monthlySalaryInput.focus();
+        });
+
+        const saveMonthlySalary = () => {
+            let newSalaryText = monthlySalaryInput.value.trim();
+            const newSalaryNumeric = parseCurrencyToFloat(newSalaryText);
+
+            monthlySalaryDisplay.textContent = formatFloatToCurrency(newSalaryNumeric);
+            monthlySalaryDisplay.setAttribute('data-numeric-value', newSalaryNumeric);
+            
+            monthlySalaryDisplay.classList.remove('hidden');
+            monthlySalaryInput.classList.add('hidden');
+            calculateBalance();
+        };
+
+        monthlySalaryInput.addEventListener('blur', saveMonthlySalary);
+        monthlySalaryInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                saveMonthlySalary();
+            }
+        });
+    </script>
+</body>
+</html>
